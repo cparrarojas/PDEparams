@@ -172,7 +172,7 @@ for each of the variables in the system.**
 
 ##### 4. `bounds`
 
-The optimisation performed by DA is constrained and, therefore, bounds
+The optimisation performed by DE is constrained and, therefore, bounds
 for the parameter values must be provided. These should be in the form
 of a tuple of tuples or list of tuples.
 
