@@ -2,7 +2,7 @@ PDEparams
 =========
 
 A module for parameter estimation in partial differential equations
-(PDEs) using the Differential Evolution (DA) algorithm.
+(PDEs) using the Differential Evolution (DE) algorithm.
 
 Requirements
 ------------
@@ -205,7 +205,7 @@ specified, it is assumed to be 1.
 The number of measurements per space-time coordinate in the data. If not
 specified, it is assumed to be 1.
 
-#### 5. `obsidx`
+##### 5. `obsidx`
 
 In the case when not all variables in the system are actually observed,
 we need to specify for which of them we have data. `obsidx` is a list of
@@ -215,7 +215,7 @@ have a three-dimensional state vector with data for the second and third
 variables, we should pass
 
 ``` python
-`obsidx=[1,2]`
+obsidx=[1,2]
 ```
 
 If only one variable is observed, `obsidx` can be either an integer or a
@@ -288,10 +288,13 @@ argument; for instance, for the root mean squared error:
 my_object.fit(error='rmse')
 ```
 
-Possible choices for `error` are: - `'mse'`: mean squared error -
-`'rmse'`: root mean squared error - `'msle'`: mean squared logarithmic
-error - `'rmsle'`: root mean squared logarithmic error - `'mae'`: mean
-absolute error - `'medae'`: median absolute error
+Possible choices for `error` are: 
+- `'mse'`: mean squared error
+- `'rmse'`: root mean squared error
+- `'msle'`: mean squared logarithmic error
+- `'rmsle'`: root mean squared logarithmic error
+- `'mae'`: mean absolute error
+- `'medae'`: median absolute error
 
 The results are displayed on screen and stored in the attribute
 `best_params`, while the optimum value of the cost function is stored in
