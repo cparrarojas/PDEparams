@@ -309,9 +309,13 @@ and refitting the rest of the parameters. This is done using
 my_object.likelihood_profiles()
 ```
 
-If no argument is given, a regular grid of 100 points will be used per
-parameter. For other configurations, use the optional `npoints`
-argument; *e.g.*,
+A list of parameter values to try can be explicitly given for each parameter in the model, using the optional argument `param_values`&mdash;this should be a list of lists or a list of arrays, and its size must coincide with the number of parameters. For instance, in oder to use the values `[1,2,3]` for the first and `[4,5,6]` for the second parameter in a model with two parameters, use
+
+``` python
+my_object.likelihood_profiles(param_values=[[1,2,3], [4,5,6]])
+```
+
+If no explicit values are provided, the likelihood profiles will be computed using a regular grid within the parameter bounds for each parameter. There is a second optional argument, `npoints`, that controls the number of points to use in the grid. If no argument is given, a regular grid of 100 points will be used per parameter. For, *e.g.*, 250 points per parameter, use
 
 ``` python
 my_object.likelihood_profiles(npoints=250)
