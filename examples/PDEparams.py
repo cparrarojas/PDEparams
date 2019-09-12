@@ -45,7 +45,7 @@ class PDEmodel:
 
         param_names (optional, default: None): parameter names to be used in tables
                                                and plots. If None, names appear as
-                                               "parameter_1", "parameter_2", etc.
+                                               "parameter 1", "parameter 2", etc.
 
         nvars (optional, default: 1): the number of variables in the system.
 
@@ -70,7 +70,6 @@ class PDEmodel:
         self.initfunc = initfunc
         self.data = data
         self.bounds = bounds
-        self.param_names = param_names
         self.nvars = nvars
         self.spacedims = ndims
         self.nreplicates = nreplicates
@@ -78,6 +77,11 @@ class PDEmodel:
         self.outfunc = outfunc
 
         self.nparams = len(self.bounds)
+
+        if param_names is not None:
+            self.param_names = param_names
+        else:
+            self.param_names = ['parameter ' + str(i+1) for i in range(self.nparams)]
 
         datacols = data.columns.values
         alloutputs = data[datacols[1+ndims:]].values
@@ -109,15 +113,17 @@ class PDEmodel:
             self.space = np.array(np.meshgrid(*(v for v in grid))).T.reshape(shapes)
             self.shapes = shapes
 
-
         if self.spacedims == 0:
             self.initial_condition = np.array([self.initfunc[i]() for i in range(self.nvars)])
+
+        elif self.spacedims == 1:
+            self.initial_condition = np.array([np.vectorize(self.initfunc[i])(self.space) for i in range(self.nvars)])
 
         else:
             self.initial_condition = np.array([np.apply_along_axis(self.initfunc[i], -1, self.space) for i in range(self.nvars)])
 
         if self.nvars == 1:
-            self.initial_condition = self.initial_condition[0]
+             self.initial_condition = self.initial_condition[0]
 
         self.functiondata = alloutputs
 
@@ -152,10 +158,16 @@ class PDEmodel:
             elif self.obsidx is not None:
                 ft = ft[:, self.obsidx]
 
-            error = self.error(ft, functiondata)
+            try:
+                error = self.error(ft, functiondata)
+            except:
+                error = np.inf
 
             if self.sqrt:
-                error = np.sqrt(error)
+                try:
+                    error = np.sqrt(error)
+                except:
+                    error = np.inf
 
             return error
 
@@ -192,10 +204,16 @@ class PDEmodel:
             elif self.obsidx is not None:
                 ft = ft[:, self.obsidx]
 
-            error = self.error(ft, functiondata)
+            try:
+                error = self.error(ft, functiondata)
+            except:
+                error = np.inf
 
             if self.sqrt:
-                error = np.sqrt(error)
+                try:
+                    error = np.sqrt(error)
+                except:
+                    error = np.inf
 
             return error
 
@@ -237,10 +255,7 @@ class PDEmodel:
 
         params = optimisation.x
 
-        if self.param_names is not None:
-            best_params = {self.param_names[i]: [params[i]] for i in range(self.nparams)}
-        else:
-            best_params = {'parameter ' + str(i+1): [params[i]] for i in range(self.nparams)}
+        best_params = {self.param_names[i]: [params[i]] for i in range(self.nparams)}
 
         self.best_params = pd.DataFrame(best_params)
 
@@ -249,13 +264,14 @@ class PDEmodel:
         print(self.best_params)
         return
 
-    def likelihood_profiles(self, npoints=100):
+    def likelihood_profiles(self, param_values=None, npoints=100):
         '''Computes the likelihood profile of each parameter.
 
         Parameters
         ----------
+        param_values (optional, default: None): a list of arrays of values for each parameter.
         npoints (optional, default: 100): the number of values in which to divide the parameter
-        domain given by the bounds.
+        domain given by the bounds, if param_values is not specified.
 
         Returns
         -------
@@ -270,8 +286,12 @@ class PDEmodel:
         summary = pd.DataFrame({'parameter': [], 'value': [], 'error': []})
         for i in tqdm(range(self.nparams), desc='parameters'):
             xmin, xmax = self.bounds[i]
-            pname = self.param_names[i] if self.param_names is not None else 'parameter ' + str(i+1)
-            pvalues = np.linspace(xmin, xmax, npoints)
+            pname = self.param_names[i]
+
+            if param_values is None:
+                pvalues = np.linspace(xmin, xmax, npoints)
+            else:
+                pvalues = param_values[i]
 
             new_bounds = [bound for bound in self.bounds]
 
@@ -304,12 +324,7 @@ class PDEmodel:
 
         '''
 
-        if self.param_names is not None:
-            pnames = self.param_names
-        else:
-            pnames = ['parameter ' + str(i+1) for i in range(self.nparams)]
-
-        for i, pname in enumerate(pnames):
+        for i, pname in enumerate(self.param_names):
             data = self.result_profiles[self.result_profiles.parameter == pname]
 
             plt.plot(data.value.values, data.error.values, c=colours[5])
@@ -345,11 +360,7 @@ class PDEmodel:
             self.error = mean_squared_error
             self.sqrt = False
 
-        if self.param_names is not None:
-            summary = {self.param_names[i]: [] for i in range(self.nparams)}
-
-        else:
-            summary = {'parameter ' + str(i+1): [] for i in range(self.nparams)}
+        summary = {self.param_names[i]: [] for i in range(self.nparams)}
 
         for run in tqdm(range(nruns), desc='runs'):
 
@@ -365,10 +376,7 @@ class PDEmodel:
             params = optimisation.x
 
             for i in range(self.nparams):
-                if self.param_names is not None:
-                    summary[self.param_names[i]].append(params[i])
-                else:
-                    summary['parameter ' + str(i+1)].append(params[i])
+                summary[self.param_names[i]].append(params[i])
 
         summary = pd.DataFrame(summary)
 
@@ -405,7 +413,7 @@ class PDEmodel:
 
         else:
             g = sns.distplot(self.bootstrap_raw, hist=False, kde_kws=dict(shade=True), color=colours[5])
-            plt.xlabel(self.param_names[0] if self.param_names is not None else 'parameter_1')
+            plt.xlabel(self.param_names[0])
             plt.axvline(x=self.best_params.values[0,0], color=colours[1], linestyle='--', linewidth=1.5)
 
         plt.tight_layout()

@@ -113,15 +113,17 @@ class PDEmodel:
             self.space = np.array(np.meshgrid(*(v for v in grid))).T.reshape(shapes)
             self.shapes = shapes
 
-
         if self.spacedims == 0:
             self.initial_condition = np.array([self.initfunc[i]() for i in range(self.nvars)])
+
+        elif self.spacedims == 1:
+            self.initial_condition = np.array([np.vectorize(self.initfunc[i])(self.space) for i in range(self.nvars)])
 
         else:
             self.initial_condition = np.array([np.apply_along_axis(self.initfunc[i], -1, self.space) for i in range(self.nvars)])
 
         if self.nvars == 1:
-            self.initial_condition = self.initial_condition[0]
+             self.initial_condition = self.initial_condition[0]
 
         self.functiondata = alloutputs
 
@@ -156,10 +158,16 @@ class PDEmodel:
             elif self.obsidx is not None:
                 ft = ft[:, self.obsidx]
 
-            error = self.error(ft, functiondata)
+            try:
+                error = self.error(ft, functiondata)
+            except:
+                error = np.inf
 
             if self.sqrt:
-                error = np.sqrt(error)
+                try:
+                    error = np.sqrt(error)
+                except:
+                    error = np.inf
 
             return error
 
@@ -196,10 +204,16 @@ class PDEmodel:
             elif self.obsidx is not None:
                 ft = ft[:, self.obsidx]
 
-            error = self.error(ft, functiondata)
+            try:
+                error = self.error(ft, functiondata)
+            except:
+                error = np.inf
 
             if self.sqrt:
-                error = np.sqrt(error)
+                try:
+                    error = np.sqrt(error)
+                except:
+                    error = np.inf
 
             return error
 
@@ -250,13 +264,14 @@ class PDEmodel:
         print(self.best_params)
         return
 
-    def likelihood_profiles(self, npoints=100):
+    def likelihood_profiles(self, param_values=None, npoints=100):
         '''Computes the likelihood profile of each parameter.
 
         Parameters
         ----------
+        param_values (optional, default: None): a list of arrays of values for each parameter.
         npoints (optional, default: 100): the number of values in which to divide the parameter
-        domain given by the bounds.
+        domain given by the bounds, if param_values is not specified.
 
         Returns
         -------
@@ -272,7 +287,11 @@ class PDEmodel:
         for i in tqdm(range(self.nparams), desc='parameters'):
             xmin, xmax = self.bounds[i]
             pname = self.param_names[i]
-            pvalues = np.linspace(xmin, xmax, npoints)
+
+            if param_values is None:
+                pvalues = np.linspace(xmin, xmax, npoints)
+            else:
+                pvalues = param_values[i]
 
             new_bounds = [bound for bound in self.bounds]
 
